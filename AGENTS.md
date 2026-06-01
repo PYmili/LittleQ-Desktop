@@ -1,0 +1,188 @@
+# AGENTS.md
+
+## 项目概览
+
+Electron 桌面应用，技术栈：`electron-vite` + Vue 3 (Composition API) + TypeScript，脚手架来自 [electron-vite-boilerplate](https://github.com/alex8088/electron-vite-boilerplate)。
+
+## 核心命令
+
+| 命令                  | 用途                                           |
+| --------------------- | ---------------------------------------------- |
+| `npm run dev`         | 启动开发环境（HMR + 主进程热重载）             |
+| `npm run build`       | 类型检查 + electron-vite 构建（输出到 `out/`） |
+| `npm run typecheck`   | 运行全部类型检查                               |
+| `npm run lint`        | ESLint 检查并自动修复                          |
+| `npm run format`      | Prettier 格式化                                |
+| `npm run build:win`   | 构建 Windows 安装包                            |
+| `npm run build:mac`   | 构建 macOS 安装包                              |
+| `npm run build:linux` | 构建 Linux 安装包                              |
+
+- **类型检查是构建的前提**：`build` 会先执行 `typecheck`（`tsc --noEmit` + `vue-tsc --noEmit`），失败则构建中断。
+- `typecheck` 分两步：`typecheck:node`（主进程/preload）和 `typecheck:web`（渲染进程），必须都通过。
+- 单步调试：VSCode 中运行 `Debug All`（launch.json 已配置主进程 + 渲染进程联调）。
+
+## 项目结构
+
+```
+src/
+├── main/                # Electron 主进程（Node.js 环境）
+│   ├── index.ts          # 窗口创建、IPC 注册
+│   ├── ipc-handlers.ts   # 所有 IPC 处理器（ai:stream、settings:*、sessions:*）
+│   ├── settings-store.ts # Provider 配置持久化（~/.little-q-desktop/settings.json）
+│   ├── session-store.ts  # 会话持久化（~/.little-q-desktop/sessions.json + 日期目录）
+│   ├── ai/               # AI 模块
+│   │   ├── agent.ts      # runAgent — streamText + fullStream 编排 + 错误提取
+│   │   ├── providers.ts  # Provider 注册表 + getModel
+│   │   ├── tools.ts      # Agent 工具（readFile/writeFile）
+│   │   └── types.ts      # StreamChunk、ChatConfig、ProviderSettings 类型
+│   └── common/           # 主进程公共工具
+│       └── fs-utils.ts   # ensureDir、dateDir
+├── preload/             # 预加载脚本（contextBridge 暴露 API 给渲染进程）
+│   ├── index.ts
+│   └── index.d.ts       # window.electron / window.api 全局类型声明
+└── renderer/            # Vue 3 渲染进程
+    ├── index.html        # HTML 入口（含 CSP 策略）
+    └── src/
+        ├── main.ts          # Vue 挂载入口（Pinia + Router + ElementPlus 图标）
+        ├── App.vue          # 根组件（`<router-view />`）
+        ├── env.d.ts
+        ├── api/             # API 层（axios 封装实例）
+        │   ├── index.ts
+        │   └── request.ts
+        ├── assets/          # 全局样式（base.css、main.css、icon.svg）
+        ├── common/          # 渲染进程公共工具
+        │   └── id-utils.ts  # genId（nanoid）
+        ├── components/      # 可复用组件
+        │   ├── SideBar.vue
+        │   ├── ChatArea.vue
+        │   ├── ChatInput.vue
+        │   ├── MessageList.vue
+        │   └── settings/
+        │       └── AiProviderPanel.vue
+        ├── composables/     # 组合式函数
+        │   ├── useToast.ts
+        │   └── useFormValidation.ts
+        ├── pages/           # 路由页面
+        │   ├── HomePage.vue
+        │   └── SettingsPage.vue
+        ├── router/          # Vue Router 配置
+        │   └── index.ts
+        ├── stores/          # Pinia 状态管理
+        │   └── chat.ts      # 会话 Store（单会话懒加载架构）
+        └── types/           # 渲染进程类型
+            ├── provider.ts
+            └── store/
+                └── chat.types.ts  # ConversationModel、ConversationSummary、MessageModel
+```
+
+- 构建输出目录 `out/`（git 忽略），`dist/` 为 electron-builder 打包产物（git 忽略）。
+- 路径别名 `@renderer` → `src/renderer/src`（在 `tsconfig.web.json` 和 `electron.vite.config.ts` 中定义）。
+- 主进程/preload 启用了 `bytecodePlugin()`，生产构建会将 TS 编译为 V8 字节码进行源码保护。
+- Element Plus 使用 `unplugin-vue-components` + `unplugin-auto-import` 按需导入，图标全局注册。
+
+## 开发检查清单
+
+**每次编写代码后必须执行以下检查：**
+
+- **vue-tsc**：当前 `vue-tsc@1.8.27` 与 TypeScript 5.9 不兼容，`typecheck:web` 会失败但不影响构建。
+- **ESLint 检查**：`npm run lint`，目标 0 error。ESLint 带 `--fix` 会自动修复格式问题。
+- **Prettier 格式化**：`npm run format`，确保全部文件 unchanged。
+- **TSDoc 注释规范**：所有模块、接口、函数、组件必须编写 `/** */` 格式的 TSDoc 注释（使用标准标签 `@remarks`、`@param`、`@returns`、`@example`），并在注释第一行写简要说明。`eslint-plugin-tsdoc`（`tsdoc/syntax: warn`）仅在 `.ts`/`.tsx`/`.vue` 文件中生效，自动检查 TSDoc 语法，基线为 0 warning。
+- **类型检查**：`npm run typecheck`，分为 `typecheck:node` 和 `typecheck:web` 两步。
+
+检查顺序为：`lint` → `format` → `typecheck`。
+
+## 代码约定
+
+详见 [`docs/coding-standards.md`](docs/coding-standards.md)。包含格式化规则、TSDoc 注释规范、接口/类型命名规范、文件组织约定。
+
+## 开发注意
+
+- **包管理器**：使用 npm 运行脚本，但 `.npmrc` 中 `shamefully-hoist=true` 表明底层实际使用 pnpm。`pnpm-workspace.yaml` 存在，不要删除。
+- **npm mirror**：`.npmrc` 中 `electron_mirror` 供 `electron-builder` 使用。但 `@electron/get` v5（Electron 36+）不再读取 `.npmrc`，需通过 `ELECTRON_MIRROR` 环境变量指定镜像。所有 `electron-vite` 和 `electron-builder` 相关脚本已通过 `cross-env` 设置该变量，国内环境必须保留。
+- **Electron 二进制缺失**：pnpm workspace 配置下，`electron` 包的 `install.js`（下载二进制）可能不自动执行。如遇 `Error: Electron uninstall`，手动执行：
+  ```
+  $env:ELECTRON_MIRROR="https://npmmirror.com/mirrors/electron/"
+  node node_modules/electron/install.js
+  ```
+- **CSP**：渲染进程的 `index.html` 中设置了严格的 CSP（`default-src 'self'`），添加外部资源时需同步更新。
+- **preload 类型**：新增 `contextBridge` API 后，需同步更新 `src/preload/index.d.ts` 中的 `Window` 接口声明，否则渲染进程中会报类型错误。
+- **electron-builder**：`postinstall` 会运行 `electron-builder install-app-deps`，确保原生依赖正确编译。
+
+## 数据持久化
+
+### 目录结构
+
+```
+~/.little-q-desktop/
+├── settings.json          # Provider 配置（Providers + selectedProviderId）
+└── sessions/
+    ├── sessions.json      # 会话索引（id、title、createdAt、updatedAt — 不含 messages）
+    └── {YYYY-MM-DD}/      # 按会话创建日期分目录
+        └── {id}.json      # 单会话完整数据（messages + metadata）
+```
+
+### 会话存储架构
+
+| 层次 | 文件               | 内容                                |
+| ---- | ------------------ | ----------------------------------- |
+| 索引 | `sessions.json`    | 所有会话的摘要，按 `updatedAt` 倒序 |
+| 详情 | `{日期}/{id}.json` | 单个会话的完整 messages 数组        |
+
+- **主进程**：`src/main/session-store.ts` 负责文件读写（`loadSessionsIndex`、`loadSession`、`saveSession`、`deleteSession`）
+- **IPC 通道**：`sessions:list`、`sessions:load`、`sessions:save`、`sessions:delete`
+- **渲染进程**：`stores/chat.ts` 通过 `window.api.sessions*` 调用 IPC
+
+### 单会话懒加载架构
+
+`stores/chat.ts` 采用单一活跃会话模式，避免内存溢出：
+
+| 变量 | 类型 | 用途 |
+| ---- | ---- | ---- |
+| `summaries` | `ref<ConversationSummary[]>` | 侧边栏展示用，启动时全量加载 |
+| `activeConversation` | `ref<ConversationModel \| null>` | 当前活跃会话完整数据（唯一一份在内存） |
+| `activeId` | `ref<string \| null>` | 当前活跃会话 ID |
+
+- **加载策略**：`init()` 加载摘要列表 + 仅加载最近一条完整会话
+- **切换会话**：`switchConversation(id)` 先持久化旧会话，再懒加载新会话并覆盖 `activeConversation`
+- **创建会话**：直接覆盖 `activeConversation`，旧会话已在上一步持久化
+- **删除会话**：先删磁盘（`await`）→ 成功后清理摘要列表 → 若匹配活跃会话则清空并切换
+- **持久化时机**：`addMessage` 非流式消息立即持久化；流式消息延迟到 `finishStreaming` 时持久化（避免写入空 content）
+- **清理**：`deleteSession` 会实际删除空的日期目录（`rmdirSync`）
+
+## AI 集成
+
+### Vercel AI SDK 版本
+
+| 包                  | 版本 | 用途                                              |
+| ------------------- | ---- | ------------------------------------------------- |
+| `ai`                | ^6.x | `streamText`、`stepCountIs`、`ModelMessage`、`APICallError` |
+| `@ai-sdk/openai`    | ^3.x | OpenAI / OpenAI 兼容接口                          |
+| `@ai-sdk/anthropic` | ^3.x | Anthropic Claude                                  |
+| `zod`               | ^4.x | Agent 工具参数校验                                |
+
+### Provider 注册与兼容性
+
+- **Provider 注册表**：`src/main/ai/providers.ts` 中 `providerMap: Map<string, OpenAIProvider | AnthropicProvider>`
+- **启动初始化**：`ipc-handlers.ts` 的 `initProviders()` 在应用启动时从 `settings.json` 加载所有 Provider 并注册到 `providerMap`
+- **必须使用 `.chat()`**：`@ai-sdk/openai` v3 默认调用 `provider(model)` 走 **Responses API**（`/v1/responses`），DeepSeek 等第三方接口不支持。**必须**通过 `provider.chat(model)` 强制使用 Chat Completions API（`/v1/chat/completions`）
+- **Anthropic 兼容**：`AnthropicProvider` 同样有 `.chat()` 方法（映射到 Messages API），无需分支判断
+
+### Agent 编排
+
+- `streamText` + `stepCountIs(10)` 实现 ReAct 循环，LLM 在 10 步内反复迭代（判断是否需要调用工具）
+- **使用 `fullStream` 而非 `textStream`**：v6 中 API 错误（如余额不足、鉴权失败）作为 `fullStream` 中的 `error` part 出现，`textStream`（`AsyncIterableStream<string>`）只产出文本字符串，无法捕获这类错误
+- **错误提取**：`formatErrorMessage()` 使用 `APICallError.isInstance()` 检测 API 错误，优先提取 `data.error.message` 作为用户消息，拼接 `[HTTP xxx]` 前缀
+- **内容推送**：`text-delta` → `type: 'content'`；`error` → `type: 'error'`（含提取后的消息）；`tool-error` → `type: 'error'`；其他 part 类型（`tool-call`、`start-step` 等）不推送到前端
+
+### IPC 注意事项
+
+- **reactive 对象不能直接传 IPC**：Vue 的 `reactive()` 返回 Proxy 对象，`structuredClone` 无法序列化。传参时使用 `{ ...reactiveObj }` 展开为普通对象。
+- **AI 调用在主进程**：API Key 仅在主进程中使用，不暴露给渲染进程。流式回复通过 `webContents.send('ai:chunk')` 实时推送。
+
+### Markdown 渲染
+
+- **库**：`markdown-it` + `highlight.js`（`github-dark` 主题）
+- **触发时机**：AI 回复流式输出完毕（`Message.streaming` 从 `true` → `false`）后，由 `MessageList.vue` 中的 `renderMarkdown()` 渲染为 HTML，通过 `v-html` 注入
+- **流式输出中**：显示原始纯文本，不渲染 Markdown
+- **`Message.streaming` 字段**：`ChatInput.vue` 在创建 assistant 消息时设为 `true`，在 `done`/`error`/`catch` 中调用 `chatStore.finishStreaming()` 置为 `false`
