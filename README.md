@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="./build/icon.png" alt="LittleQ" width="96">
+  <img src="/resources/icon.png" alt="LittleQ" width="96">
   <br>
   LittleQ Desktop
   <br>
