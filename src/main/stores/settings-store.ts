@@ -2,8 +2,8 @@ import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
 import { dialog } from 'electron'
-import type { ProviderSettings } from './ai/types'
-import { ensureDir } from './common/fs-utils'
+import type { ProviderSettings, PetSettings, SettingsData } from '../types'
+import { ensureDir } from '../common/fs-utils'
 
 /**
  * 应用设置 Store。
@@ -19,18 +19,19 @@ const SETTINGS_DIR = join(homedir(), '.little-q-desktop')
 /** 设置文件路径 */
 const SETTINGS_PATH = join(SETTINGS_DIR, 'settings.json')
 
-/** 设置数据格式 */
-interface SettingsData {
-  version: number
-  providers: ProviderSettings[]
-  selectedProviderId: string | null
+/** 宠物默认设置 */
+const DEFAULT_PET: PetSettings = {
+  visible: false,
+  scale: 0.3,
+  debug: false
 }
 
 /** 默认空设置 */
 const DEFAULT_SETTINGS: SettingsData = {
   version: 1,
   providers: [],
-  selectedProviderId: null
+  selectedProviderId: null,
+  pet: { ...DEFAULT_PET }
 }
 
 /** 内存中的设置缓存 */
@@ -57,7 +58,12 @@ export function loadSettings(): SettingsData {
     cachedSettings = {
       version: parsed.version || DEFAULT_SETTINGS.version,
       providers: parsed.providers || [],
-      selectedProviderId: parsed.selectedProviderId || null
+      selectedProviderId: parsed.selectedProviderId || null,
+      pet: {
+        visible: parsed.pet?.visible ?? DEFAULT_PET.visible,
+        scale: parsed.pet?.scale ?? DEFAULT_PET.scale,
+        debug: parsed.pet?.debug ?? DEFAULT_PET.debug
+      }
     }
     return cachedSettings
   } catch (err) {
@@ -196,4 +202,25 @@ export async function importSettings(): Promise<ProviderSettings[] | null> {
     console.error('[Settings] 导入失败：文件格式错误')
     return null
   }
+}
+
+/**
+ * 获取宠物设置。
+ *
+ * @returns 宠物设置
+ */
+export function getPetSettings(): PetSettings {
+  if (!cachedSettings) loadSettings()
+  return cachedSettings?.pet || { ...DEFAULT_PET }
+}
+
+/**
+ * 保存宠物设置（部分更新）。
+ *
+ * @param pet - 需要更新的宠物设置字段
+ */
+export function savePetSettings(pet: Partial<PetSettings>): void {
+  const settings = cachedSettings || loadSettings()
+  settings.pet = { ...settings.pet, ...pet }
+  saveSettings(settings)
 }

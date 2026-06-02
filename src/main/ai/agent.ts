@@ -1,5 +1,5 @@
 import { streamText, stepCountIs, APICallError, type ModelMessage } from 'ai'
-import type { StreamChunk, ChatConfig } from './types'
+import type { StreamChunk, ChatConfig } from '../types'
 import { getModel } from './providers'
 import { agentTools } from './tools'
 

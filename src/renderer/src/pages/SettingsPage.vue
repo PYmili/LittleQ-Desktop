@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AiProviderPanel from '@renderer/components/settings/AiProviderPanel.vue'
+import PetPanel from '@renderer/components/settings/PetPanel.vue'
 
 const router = useRouter()
 
@@ -13,6 +14,7 @@ const router = useRouter()
  */
 const categories = [
   { key: 'ai', label: 'AI 服务' },
+  { key: 'pet', label: '宠物' },
   { key: 'general', label: '通用' },
   { key: 'about', label: '关于' }
 ] as const
@@ -53,6 +55,7 @@ function goBack() {
           @click="selectCategory(cat.key)"
         >
           <el-icon v-if="cat.key === 'ai'"><Cpu /></el-icon>
+          <el-icon v-else-if="cat.key === 'pet'"><Sunny /></el-icon>
           <el-icon v-else-if="cat.key === 'general'"><Setting /></el-icon>
           <el-icon v-else-if="cat.key === 'about'"><InfoFilled /></el-icon>
           <span>{{ cat.label }}</span>
@@ -70,6 +73,8 @@ function goBack() {
 
       <div class="settings-body">
         <AiProviderPanel v-if="activeCategory === 'ai'" />
+
+        <PetPanel v-else-if="activeCategory === 'pet'" />
 
         <div v-else-if="activeCategory === 'general'" class="placeholder-panel">
           <el-icon><Setting /></el-icon>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 15 18" width="256" height="256" shape-rendering="crispEdges">
+  <defs>
+    <style>
+      .breathe-anim {
+        transform-origin: 7.5px 9px;
+        animation: breathe 4s infinite ease-in-out;
+      }
+
+      .shadow-anim {
+        transform-origin: 7.5px 15px;
+        animation: shadow 4s infinite ease-in-out;
+      }
+
+      .eyes-blink {
+        transform-origin: 7.5px 9.25px;
+        animation: eye-blink 5s infinite ease-in-out;
+      }
+
+      @keyframes breathe {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(0, -1.15px); }
+      }
+
+      @keyframes shadow {
+        0%, 100% { transform: scale(1, 1); opacity: 0.5; }
+        50% { transform: scale(0.85, 1); opacity: 0.2; }
+      }
+
+      @keyframes eye-blink {
+        0%, 42%, 100% { transform: scaleY(1); }
+        46% { transform: scaleY(0.1); }
+        47% { transform: scaleY(1); }
+      }
+    </style>
+  </defs>
+
+  <g id="main">
+    <!-- 地面阴影 -->
+    <g class="shadow-anim">
+      <rect x="3" y="15" width="9" height="1" fill="#000000" opacity="0.5"/>
+    </g>
+
+    <!-- 呼吸动画组：整体上下缓动（含白色描边框） -->
+    <g class="breathe-anim">
+      <g id="shell-outline-group" fill="#f2f8ff">
+        <rect id="shell-head-outline" x="3.95" y="4.95" width="7.1" height="1.1"/>
+        <rect id="shell-neck-outline" x="2.95" y="5.95" width="9.1" height="1.1"/>
+        <rect id="shell-body-outline" x="1.95" y="6.95" width="11.1" height="6.1"/>
+      </g>
+
+      <g id="shell-color-group" fill="#00b3ff">
+        <rect id="shell-head" x="4" y="5" width="7" height="1"/>
+        <rect id="shell-neck" x="3" y="6" width="9" height="1"/>
+        <rect id="shell-body" x="2" y="7" width="11" height="6"/>
+        <rect id="left-wing" x="0" y="9" width="1.5" height="1.5"/>
+        <rect id="right-wing" x="13.5" y="9" width="1.5" height="1.5"/>
+      </g>
+
+      <g id="limb-color-group" fill="#00b3ff">
+        <rect id="left-foot" x="4" y="13" width="1.5" height="1.5"/>
+        <rect id="right-foot" x="9.5" y="13" width="1.5" height="1.5"/>
+      </g>
+
+      <!-- 眼睛眨眼动画（上下往中间闭合，睁开比闭合快） -->
+      <g class="eyes-blink" fill="#000000">
+        <rect id="left-eye" x="4" y="8" width="1.5" height="2.5"/>
+        <rect id="right-eye" x="9.5" y="8" width="1.5" height="2.5"/>
+      </g>
+
+      <g class="eyes-blink" fill="#ffffff" opacity="0.8">
+        <rect id="left-eye-highlight" x="4.75" y="8" width="0.5" height="0.75"/>
+        <rect id="right-eye-highlight" x="10.25" y="8" width="0.5" height="0.75"/>
+      </g>
+    </g>
+  </g>
+</svg>

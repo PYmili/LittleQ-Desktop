@@ -19,6 +19,14 @@ export default defineConfig({
     plugins: []
   },
   renderer: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/renderer/index.html'),
+          pet: resolve('src/renderer/pet.html')
+        }
+      }
+    },
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src')

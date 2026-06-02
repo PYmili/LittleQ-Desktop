@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>LittleQ Pet</title>
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent !important;
+        will-change: transform;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent !important;
+        will-change: transform;
+      }
+
+      #pet-container {
+        width: 100%;
+        height: 100%;
+      }
+
+      #pet-container svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .debug-mode,
+      .debug-mode body {
+        outline: 2px solid red;
+        outline-offset: -2px;
+      }
+
+      .debug-mode #pet-container {
+        outline: 2px dashed blue;
+        outline-offset: -2px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="pet-container"></div>
+    <script type="module" src="/src/pet.ts"></script>
+  </body>
+</html>

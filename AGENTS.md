@@ -25,25 +25,49 @@ Electron 桌面应用，技术栈：`electron-vite` + Vue 3 (Composition API) + 
 
 ```
 src/
-├── main/                # Electron 主进程（Node.js 环境）
-│   ├── index.ts          # 窗口创建、IPC 注册
-│   ├── ipc-handlers.ts   # 所有 IPC 处理器（ai:stream、settings:*、sessions:*）
-│   ├── settings-store.ts # Provider 配置持久化（~/.little-q-desktop/settings.json）
-│   ├── session-store.ts  # 会话持久化（~/.little-q-desktop/sessions.json + 日期目录）
-│   ├── ai/               # AI 模块
-│   │   ├── agent.ts      # runAgent — streamText + fullStream 编排 + 错误提取
-│   │   ├── providers.ts  # Provider 注册表 + getModel
-│   │   ├── tools.ts      # Agent 工具（readFile/writeFile）
-│   │   └── types.ts      # StreamChunk、ChatConfig、ProviderSettings 类型
-│   └── common/           # 主进程公共工具
-│       └── fs-utils.ts   # ensureDir、dateDir
-├── preload/             # 预加载脚本（contextBridge 暴露 API 给渲染进程）
-│   ├── index.ts
-│   └── index.d.ts       # window.electron / window.api 全局类型声明
-└── renderer/            # Vue 3 渲染进程
-    ├── index.html        # HTML 入口（含 CSP 策略）
+├── main/                    # Electron 主进程（Node.js 环境）
+│   ├── index.ts              # 窗口创建、IPC 注册入口
+│   ├── common/               # 主进程公共工具
+│   │   └── fs-utils.ts       # ensureDir、dateDir
+│   ├── ai/                   # AI 模块
+│   │   ├── agent.ts          # runAgent — streamText + fullStream 编排 + 错误提取
+│   │   ├── providers.ts      # Provider 注册表 + getModel
+│   │   └── tools.ts          # Agent 工具（readFile/writeFile）
+│   ├── ipc-handlers/         # IPC 处理器（按模块拆分）
+│   │   ├── index.ts           # registerAllIpcHandlers — 统一注册入口
+│   │   ├── ai-ipc-handlers.ts # ai:stream
+│   │   ├── settings-ipc-handlers.ts # Provider 管理 + 导入/导出
+│   │   ├── sessions-ipc-handlers.ts # 会话 CRUD
+│   │   └── pet-ipc-handlers.ts      # 宠物窗口控制
+│   ├── stores/               # 主进程持久化 Store
+│   │   ├── settings-store.ts # Provider + 宠物配置持久化（~/.little-q-desktop/settings.json）
+│   │   └── session-store.ts  # 会话持久化（~/.little-q-desktop/sessions.json + 日期目录）
+│   ├── types/                # 主进程类型声明
+│   │   ├── index.ts           # Barrel 统一导出
+│   │   ├── ai.d.ts            # ProviderSettings、ChatConfig、StreamChunk 等
+│   │   └── store/             # Store 类型
+│   │       ├── settings-store.d.ts  # PetSettings、SettingsData
+│   │       └── session-store.d.ts   # SessionMessage、SessionSummary、SessionData、SessionsIndex
+│   └── windows/              # 独立窗口管理
+│       └── pet-window.ts     # 宠物窗口生命周期 + 状态管理
+├── preload/                 # 预加载脚本（contextBridge 暴露 API 给渲染进程）
+│   ├── index.ts              # 入口，合并各模块 API 并暴露到 window.api
+│   ├── index.d.ts            # window.electron / window.api 全局类型声明
+│   ├── ai.preload.ts         # AI 对话 API（aiStream、onAiChunk）
+│   ├── settings.preload.ts   # 设置管理 API（settings*、import/export）
+│   ├── sessions.preload.ts   # 会话管理 API（sessions*）
+│   ├── pet.preload.ts        # 宠物窗口 API（pet*）
+│   └── types/                # preload 类型声明（.d.ts）
+│       ├── ai.preload.d.ts
+│       ├── settings.preload.d.ts
+│       ├── sessions.preload.d.ts
+│       └── pet.preload.d.ts
+└── renderer/                # Vue 3 渲染进程
+    ├── index.html            # HTML 入口（含 CSP 策略）
+    ├── pet.html              # 宠物窗口 HTML 入口
     └── src/
         ├── main.ts          # Vue 挂载入口（Pinia + Router + ElementPlus 图标）
+        ├── pet.ts            # 宠物窗口渲染入口
         ├── App.vue          # 根组件（`<router-view />`）
         ├── env.d.ts
         ├── api/             # API 层（axios 封装实例）
@@ -58,7 +82,8 @@ src/
         │   ├── ChatInput.vue
         │   ├── MessageList.vue
         │   └── settings/
-        │       └── AiProviderPanel.vue
+        │       ├── AiProviderPanel.vue
+        │       └── PetPanel.vue
         ├── composables/     # 组合式函数
         │   ├── useToast.ts
         │   └── useFormValidation.ts
@@ -70,15 +95,16 @@ src/
         ├── stores/          # Pinia 状态管理
         │   └── chat.ts      # 会话 Store（单会话懒加载架构）
         └── types/           # 渲染进程类型
-            ├── provider.ts
+            ├── provider.d.ts
             └── store/
-                └── chat.types.ts  # ConversationModel、ConversationSummary、MessageModel
+                └── chat.d.ts  # ConversationModel、ConversationSummary、MessageModel
 ```
 
 - 构建输出目录 `out/`（git 忽略），`dist/` 为 electron-builder 打包产物（git 忽略）。
 - 路径别名 `@renderer` → `src/renderer/src`（在 `tsconfig.web.json` 和 `electron.vite.config.ts` 中定义）。
 - 主进程/preload 启用了 `bytecodePlugin()`，生产构建会将 TS 编译为 V8 字节码进行源码保护。
 - Element Plus 使用 `unplugin-vue-components` + `unplugin-auto-import` 按需导入，图标全局注册。
+- **类型声明文件统一使用 `.d.ts` 后缀**（如 `ai.d.ts`、`settings-store.d.ts`），模块 barrel 文件使用 `.ts` 后缀（如 `types/index.ts`）。
 
 ## 开发检查清单
 
@@ -106,7 +132,7 @@ src/
   node node_modules/electron/install.js
   ```
 - **CSP**：渲染进程的 `index.html` 中设置了严格的 CSP（`default-src 'self'`），添加外部资源时需同步更新。
-- **preload 类型**：新增 `contextBridge` API 后，需同步更新 `src/preload/index.d.ts` 中的 `Window` 接口声明，否则渲染进程中会报类型错误。
+- **preload 类型**：新增 `contextBridge` API 后，需同步更新对应模块的 `src/preload/types/xxx.preload.d.ts` 和 `src/preload/index.d.ts`，否则渲染进程中会报类型错误。
 - **electron-builder**：`postinstall` 会运行 `electron-builder install-app-deps`，确保原生依赖正确编译。
 
 ## 数据持久化
@@ -115,33 +141,34 @@ src/
 
 ```
 ~/.little-q-desktop/
-├── settings.json          # Provider 配置（Providers + selectedProviderId）
+├── settings.json          # Provider 配置（Providers + selectedProviderId + pet）
 └── sessions/
     ├── sessions.json      # 会话索引（id、title、createdAt、updatedAt — 不含 messages）
     └── {YYYY-MM-DD}/      # 按会话创建日期分目录
         └── {id}.json      # 单会话完整数据（messages + metadata）
 ```
 
-### 会话存储架构
+### 模块职责
 
-| 层次 | 文件               | 内容                                |
-| ---- | ------------------ | ----------------------------------- |
-| 索引 | `sessions.json`    | 所有会话的摘要，按 `updatedAt` 倒序 |
-| 详情 | `{日期}/{id}.json` | 单个会话的完整 messages 数组        |
+| 模块                  | 文件                                    | 职责                     |
+| --------------------- | --------------------------------------- | ------------------------ |
+| 设置 Store            | `src/main/stores/settings-store.ts`     | Provider + 宠物配置读写  |
+| 会话 Store            | `src/main/stores/session-store.ts`      | 会话索引 + 详情读写      |
+| 设置类型              | `src/main/types/store/settings-store.d.ts` | PetSettings、SettingsData |
+| 会话类型              | `src/main/types/store/session-store.d.ts`  | SessionMessage、SessionSummary 等 |
 
-- **主进程**：`src/main/session-store.ts` 负责文件读写（`loadSessionsIndex`、`loadSession`、`saveSession`、`deleteSession`）
-- **IPC 通道**：`sessions:list`、`sessions:load`、`sessions:save`、`sessions:delete`
+- **IPC 通道**：`settings:*`（设置）、`sessions:list/load/save/delete`（会话）、`pet:*`（宠物）
 - **渲染进程**：`stores/chat.ts` 通过 `window.api.sessions*` 调用 IPC
 
 ### 单会话懒加载架构
 
 `stores/chat.ts` 采用单一活跃会话模式，避免内存溢出：
 
-| 变量 | 类型 | 用途 |
-| ---- | ---- | ---- |
-| `summaries` | `ref<ConversationSummary[]>` | 侧边栏展示用，启动时全量加载 |
+| 变量                 | 类型                             | 用途                                   |
+| -------------------- | -------------------------------- | -------------------------------------- |
+| `summaries`          | `ref<ConversationSummary[]>`     | 侧边栏展示用，启动时全量加载           |
 | `activeConversation` | `ref<ConversationModel \| null>` | 当前活跃会话完整数据（唯一一份在内存） |
-| `activeId` | `ref<string \| null>` | 当前活跃会话 ID |
+| `activeId`           | `ref<string \| null>`            | 当前活跃会话 ID                        |
 
 - **加载策略**：`init()` 加载摘要列表 + 仅加载最近一条完整会话
 - **切换会话**：`switchConversation(id)` 先持久化旧会话，再懒加载新会话并覆盖 `activeConversation`
@@ -154,17 +181,17 @@ src/
 
 ### Vercel AI SDK 版本
 
-| 包                  | 版本 | 用途                                              |
-| ------------------- | ---- | ------------------------------------------------- |
+| 包                  | 版本 | 用途                                                        |
+| ------------------- | ---- | ----------------------------------------------------------- |
 | `ai`                | ^6.x | `streamText`、`stepCountIs`、`ModelMessage`、`APICallError` |
-| `@ai-sdk/openai`    | ^3.x | OpenAI / OpenAI 兼容接口                          |
-| `@ai-sdk/anthropic` | ^3.x | Anthropic Claude                                  |
-| `zod`               | ^4.x | Agent 工具参数校验                                |
+| `@ai-sdk/openai`    | ^3.x | OpenAI / OpenAI 兼容接口                                    |
+| `@ai-sdk/anthropic` | ^3.x | Anthropic Claude                                            |
+| `zod`               | ^4.x | Agent 工具参数校验                                          |
 
 ### Provider 注册与兼容性
 
 - **Provider 注册表**：`src/main/ai/providers.ts` 中 `providerMap: Map<string, OpenAIProvider | AnthropicProvider>`
-- **启动初始化**：`ipc-handlers.ts` 的 `initProviders()` 在应用启动时从 `settings.json` 加载所有 Provider 并注册到 `providerMap`
+- **启动初始化**：`ipc-handlers/settings-ipc-handlers.ts` 的 `initProviders()` 在应用启动时从 `settings.json` 加载所有 Provider 并注册到 `providerMap`
 - **必须使用 `.chat()`**：`@ai-sdk/openai` v3 默认调用 `provider(model)` 走 **Responses API**（`/v1/responses`），DeepSeek 等第三方接口不支持。**必须**通过 `provider.chat(model)` 强制使用 Chat Completions API（`/v1/chat/completions`）
 - **Anthropic 兼容**：`AnthropicProvider` 同样有 `.chat()` 方法（映射到 Messages API），无需分支判断
 
@@ -186,3 +213,30 @@ src/
 - **触发时机**：AI 回复流式输出完毕（`Message.streaming` 从 `true` → `false`）后，由 `MessageList.vue` 中的 `renderMarkdown()` 渲染为 HTML，通过 `v-html` 注入
 - **流式输出中**：显示原始纯文本，不渲染 Markdown
 - **`Message.streaming` 字段**：`ChatInput.vue` 在创建 assistant 消息时设为 `true`，在 `done`/`error`/`catch` 中调用 `chatStore.finishStreaming()` 置为 `false`
+
+## 宠物窗口
+
+### 生命周期
+
+宠物窗口由 `src/main/windows/pet-window.ts` 统一管理，采用条件创建策略：
+
+- **启动时**：根据 `settings.json` 中的 `pet.visible` 决定是否创建
+- **切换可见性**：通过 `pet:toggle-visibility` IPC 创建或销毁窗口（非 hide/show）
+- **状态管理**：缩放比例、DEBUG 模式、SVG 基准尺寸通过 getter/setter 函数操作，避免跨模块直接赋值
+
+### 窗口配置
+
+- `type: 'toolbar'` + `hasShadow: false` 避免 Windows DWM 边框伪影
+- 透明背景 + 无边框 + 置顶 + `skipTaskbar` + `focusable: false`
+- 拖拽通过 `pet:move` IPC 以增量偏移方式实现
+
+### 相关文件
+
+| 文件                                | 职责                         |
+| ----------------------------------- | ---------------------------- |
+| `src/main/windows/pet-window.ts`    | 窗口创建、销毁、状态管理     |
+| `src/main/ipc-handlers/pet-ipc-handlers.ts` | Pet IPC 处理器       |
+| `src/preload/pet.preload.ts`        | Pet API 暴露到 window.api    |
+| `src/renderer/pet.html`             | 宠物窗口 HTML 入口           |
+| `src/renderer/src/pet.ts`           | 宠物窗口渲染逻辑             |
+| `src/renderer/src/components/settings/PetPanel.vue` | 宠物设置面板 |

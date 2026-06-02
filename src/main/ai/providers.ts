@@ -1,7 +1,7 @@
 import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai'
 import { createAnthropic, type AnthropicProvider } from '@ai-sdk/anthropic'
 import type { LanguageModel } from 'ai'
-import type { ProviderSettings } from './types'
+import type { ProviderSettings } from '../types'
 
 /**
  * Provider 实例注册表。

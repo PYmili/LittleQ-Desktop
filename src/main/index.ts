@@ -3,6 +3,8 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerAllIpcHandlers } from './ipc-handlers'
+import * as PetWindow from './windows/pet-window'
+import * as Settings from './stores/settings-store'
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -47,6 +49,18 @@ app.whenReady().then(() => {
 
   const mainWindow = createWindow()
   registerAllIpcHandlers(mainWindow)
+
+  const pet = Settings.getPetSettings()
+  if (pet.visible) {
+    const petWindow = PetWindow.createPetWindow()
+    const size = PetWindow.getWindowSize()
+    petWindow.setBounds(size)
+    petWindow.show()
+  }
+
+  mainWindow.on('closed', () => {
+    PetWindow.destroyPetWindow()
+  })
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

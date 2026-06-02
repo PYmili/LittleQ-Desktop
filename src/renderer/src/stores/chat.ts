@@ -1,17 +1,9 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type {
-  MessageModel,
-  ConversationModel,
-  ConversationSummary
-} from '../types/store/chat.types'
+import type { MessageModel, ConversationModel, ConversationSummary } from '../types/store/chat'
 import { genId } from '@renderer/common/id-utils'
 
-export type {
-  MessageModel,
-  ConversationModel,
-  ConversationSummary
-} from '../types/store/chat.types'
+export type { MessageModel, ConversationModel, ConversationSummary } from '../types/store/chat'
 
 /**
  * 移除 streaming 字段后序列化

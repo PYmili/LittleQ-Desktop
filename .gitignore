@@ -16,6 +16,10 @@ src/renderer/components.d.ts
 .env
 .env.local
 .env.*.local
+*.local
+
+# ── 用户数据目录（运行时生成，不要提交测试数据） ──
+.little-q-desktop/
 
 # ── 编辑器 / IDE ──
 .idea

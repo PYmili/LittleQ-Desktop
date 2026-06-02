@@ -54,7 +54,6 @@ export interface ConversationModel {
  *
  * @remarks
  * 用于侧边栏列表展示，仅包含会话元数据。
- * 点击时通过 {@link sessionsLoad} 懒加载完整数据。
  *
  * - `id` — 会话唯一标识
  * - `title` — 会话展示标题

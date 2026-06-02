@@ -1,7 +1,8 @@
 import { readFileSync, writeFileSync, existsSync, unlinkSync, readdirSync, rmdirSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
-import { ensureDir, dateDir } from './common/fs-utils'
+import { ensureDir, dateDir } from '../common/fs-utils'
+import type { SessionSummary, SessionData, SessionsIndex } from '../types'
 
 /**
  * 会话持久化 Store。
@@ -13,44 +14,6 @@ import { ensureDir, dateDir } from './common/fs-utils'
 
 const BASE_DIR = join(homedir(), '.little-q-desktop', 'sessions')
 const SESSIONS_INDEX_PATH = join(BASE_DIR, 'sessions.json')
-
-/**
- * 会话索引摘要（不含 messages）
- */
-export interface SessionSummary {
-  id: string
-  title: string
-  createdAt: number
-  updatedAt: number
-}
-
-/**
- * 单条消息
- */
-export interface SessionMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  timestamp: number
-}
-
-/**
- * 完整会话
- */
-export interface SessionData {
-  id: string
-  title: string
-  messages: SessionMessage[]
-  createdAt: number
-  updatedAt: number
-}
-
-/**
- * sessions.json 顶层结构
- */
-interface SessionsIndex {
-  sessions: SessionSummary[]
-}
 
 /**
  * 获取会话文件的完整路径
