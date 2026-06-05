@@ -45,5 +45,19 @@ export const settingsApi: SettingsApi = {
    *
    * @returns 导入的 Provider 列表，取消时返回 null
    */
-  settingsImport: () => ipcRenderer.invoke('settings:import')
+  settingsImport: () => ipcRenderer.invoke('settings:import'),
+
+  /**
+   * 加载主题偏好。
+   *
+   * @returns 主题值，'dark' 或 'light'
+   */
+  settingsLoadTheme: () => ipcRenderer.invoke('settings:theme:load'),
+
+  /**
+   * 保存主题偏好。
+   *
+   * @param theme - 主题值，'dark' 或 'light'
+   */
+  settingsSaveTheme: (theme) => ipcRenderer.invoke('settings:theme:save', theme)
 }

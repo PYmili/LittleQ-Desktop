@@ -26,6 +26,6 @@ import ChatInput from './ChatInput.vue'
   flex-direction: column;
   min-width: 0;
   height: 100vh;
-  background: #0d0d0f;
+  background: var(--lq-bg-app);
 }
 </style>

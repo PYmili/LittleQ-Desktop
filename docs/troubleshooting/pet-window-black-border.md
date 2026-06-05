@@ -88,7 +88,7 @@ body {
 
 ## 涉及文件
 
-| 文件                    | 修改内容                                                     |
-| ----------------------- | ------------------------------------------------------------ |
+| 文件                             | 修改内容                                                     |
+| -------------------------------- | ------------------------------------------------------------ |
 | `src/main/windows/pet-window.ts` | `hasShadow: false`、`type: 'toolbar'`、`setHasShadow(false)` |
-| `src/renderer/pet.html` | `position: fixed` 布局 + `will-change: transform` 合成层修复 |
+| `src/renderer/pet.html`          | `position: fixed` 布局 + `will-change: transform` 合成层修复 |

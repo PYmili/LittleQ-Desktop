@@ -7,11 +7,12 @@
  * 支持自定义滚动条样式，流式输出时自动跟随滚动到底部。
  * AI 回复完成后自动将 Markdown 内容渲染为 HTML。
  */
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, nextTick, computed, onMounted } from 'vue'
 import { useChatStore } from '@renderer/stores/chat'
 import { useToast } from '@renderer/composables/useToast'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
+import TypingIndicator from './TypingIndicator.vue'
 
 const chatStore = useChatStore()
 const toast = useToast()
@@ -85,6 +86,8 @@ watch(
   }
 )
 
+onMounted(scrollToBottom)
+
 /**
  * 格式化时间戳为 HH:mm 格式。
  *
@@ -124,9 +127,10 @@ async function copyMessage(content: string) {
       :class="['message', msg.role]"
     >
       <div class="message-bubble">
+        <TypingIndicator v-if="msg.role === 'assistant' && msg.streaming && !msg.content" />
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div
-          v-if="msg.role === 'assistant' && !msg.streaming && msg.content"
+          v-else-if="msg.role === 'assistant' && !msg.streaming && msg.content"
           class="message-content markdown-body"
           v-html="renderMarkdown(msg.content)"
         />
@@ -150,9 +154,6 @@ async function copyMessage(content: string) {
 </template>
 
 <style scoped>
-/* highlight.js 代码高亮主题 */
-@import 'highlight.js/styles/github-dark.min.css';
-
 .message-list {
   flex: 1;
   overflow-y: auto;
@@ -161,7 +162,7 @@ async function copyMessage(content: string) {
   flex-direction: column;
   gap: 20px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: var(--lq-scrollbar-thumb) transparent;
 }
 
 .empty-hint {
@@ -170,19 +171,19 @@ async function copyMessage(content: string) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #60606a;
+  color: var(--lq-text-hint);
 }
 
 .empty-title {
   font-size: 18px;
   font-weight: 600;
-  color: #808090;
+  color: var(--lq-text-dim);
   margin-bottom: 8px;
 }
 
 .empty-desc {
   font-size: 14px;
-  color: #505058;
+  color: var(--lq-text-placeholder);
 }
 
 .message {
@@ -214,15 +215,15 @@ async function copyMessage(content: string) {
 }
 
 .message.user .message-bubble {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: #e8e8ed;
+  background: var(--lq-bg-user-bubble);
+  color: var(--lq-text-primary);
   border-bottom-right-radius: 6px;
 }
 
 .message.assistant .message-bubble {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface);
+  border: 1px solid var(--lq-border-default);
+  color: var(--lq-text-secondary);
   border-bottom-left-radius: 6px;
 }
 
@@ -270,7 +271,7 @@ async function copyMessage(content: string) {
 
 .action-btn:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--lq-bg-surface-active);
 }
 
 /* 自定义滚动条 */
@@ -283,16 +284,16 @@ async function copyMessage(content: string) {
 }
 
 .message-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--lq-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .message-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--lq-scrollbar-thumb-hover);
 }
 
 .message-list::-webkit-scrollbar-thumb:active {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--lq-scrollbar-thumb-active);
 }
 
 /* Markdown 渲染内容样式 */
@@ -307,7 +308,7 @@ async function copyMessage(content: string) {
 .message-content.markdown-body :deep(h4) {
   margin: 16px 0 8px;
   font-weight: 600;
-  color: #e0e0e8;
+  color: var(--lq-text-primary);
 }
 
 .message-content.markdown-body :deep(h1) {
@@ -343,15 +344,15 @@ async function copyMessage(content: string) {
 .message-content.markdown-body :deep(li > code) {
   padding: 1px 5px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #c9d1d9;
+  background: var(--lq-code-inline-bg);
+  color: var(--lq-code-inline-text);
 }
 
 .message-content.markdown-body :deep(pre) {
   margin: 10px 0;
   padding: 14px 16px;
   border-radius: 8px;
-  background: #0d1117;
+  background: var(--lq-codeblock-bg);
   overflow-x: auto;
 }
 
@@ -365,10 +366,10 @@ async function copyMessage(content: string) {
 .message-content.markdown-body :deep(blockquote) {
   margin: 10px 0;
   padding: 6px 14px;
-  border-left: 3px solid rgba(99, 102, 241, 0.4);
-  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid var(--lq-accent-indigo-border);
+  background: var(--lq-bg-surface);
   border-radius: 0 6px 6px 0;
-  color: #9898a4;
+  color: var(--lq-text-muted);
 }
 
 .message-content.markdown-body :deep(table) {
@@ -381,17 +382,17 @@ async function copyMessage(content: string) {
 .message-content.markdown-body :deep(th),
 .message-content.markdown-body :deep(td) {
   padding: 6px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--lq-border-default);
   text-align: left;
 }
 
 .message-content.markdown-body :deep(th) {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--lq-bg-surface-hover);
   font-weight: 600;
 }
 
 .message-content.markdown-body :deep(a) {
-  color: #7c8cf8;
+  color: var(--lq-accent-indigo-text);
   text-decoration: none;
 }
 
@@ -402,7 +403,7 @@ async function copyMessage(content: string) {
 .message-content.markdown-body :deep(hr) {
   margin: 14px 0;
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--lq-border-default);
 }
 
 .message-content.markdown-body :deep(img) {

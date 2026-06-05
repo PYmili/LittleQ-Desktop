@@ -69,4 +69,14 @@ export function registerSettingsHandlers(): void {
     }
     return result
   })
+
+  // ── 主题偏好 ──
+
+  ipcMain.handle('settings:theme:load', async () => {
+    return Settings.getTheme()
+  })
+
+  ipcMain.handle('settings:theme:save', async (_event, theme: 'dark' | 'light') => {
+    Settings.saveTheme(theme)
+  })
 }

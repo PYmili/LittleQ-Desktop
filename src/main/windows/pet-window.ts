@@ -135,7 +135,8 @@ export function createPetWindow(): BrowserWindow {
 
   // 加载html文件
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    win.loadURL(process.env['ELECTRON_RENDERER_URL'] + 'pet.html')
+    const baseUrl = process.env['ELECTRON_RENDERER_URL'].replace(/\/+$/, '')
+    win.loadURL(`${baseUrl}/pet.html`)
   } else {
     win.loadFile(join(__dirname, '../renderer/pet.html'))
   }

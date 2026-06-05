@@ -28,7 +28,7 @@ const toast = useToast()
 const { setValue, touch, touchAll, errors, validateAll } = useFormValidation({
   name: [{ validator: (v) => v.trim().length > 0, message: '名称不能为空' }],
   apiKey: [{ validator: (v) => v.trim().length > 0, message: 'API Key 不能为空' }],
-  model: [{ validator: (v) => v.trim().length > 0, message: '模型名称不能为空' }]
+  model: [{ validator: () => form.models.length > 0, message: '请添加至少一个模型' }]
 })
 
 const providers = ref<ProviderInfo[]>([])
@@ -43,12 +43,15 @@ const originalSnapshot = ref<ProviderInfo | null>(null)
 const dirty = computed(() => {
   if (!editingId.value || !originalSnapshot.value) return true
   const o = originalSnapshot.value
+  const modelsEqual =
+    form.models.length === o.models.length && form.models.every((m, i) => m === o.models[i])
   return (
     form.name.trim() !== o.name ||
     form.type !== o.type ||
     form.apiKey.trim() !== o.apiKey ||
     (form.baseURL?.trim() || undefined) !== (o.baseURL || undefined) ||
-    form.model.trim() !== o.defaultModel
+    !modelsEqual ||
+    form.defaultModel !== o.defaultModel
   )
 })
 
@@ -56,7 +59,7 @@ const dirty = computed(() => {
 const saveDisabled = computed(() => {
   if (saving.value) return true
   if (editingId.value) return !dirty.value
-  return false
+  return form.models.length === 0 || !form.name.trim() || !form.apiKey.trim()
 })
 
 const form = reactive({
@@ -64,14 +67,50 @@ const form = reactive({
   type: 'openai' as ProviderType,
   apiKey: '',
   baseURL: '',
-  model: ''
+  modelInput: '',
+  models: [] as string[],
+  defaultModel: ''
 })
 
 /** 同步 reactive form 到验证器 */
 function syncFormToValidator() {
   setValue('name', form.name)
   setValue('apiKey', form.apiKey)
-  setValue('model', form.model)
+  setValue('model', form.models.length > 0 ? 'ok' : '')
+}
+
+/**
+ * 添加模型到列表。
+ *
+ * @remarks 首个模型自动设为默认。空名称或重复名称阻止添加。
+ */
+function handleAddModel() {
+  const name = form.modelInput.trim()
+  if (!name) return
+  if (form.models.includes(name)) {
+    toast.warning('模型名称已存在')
+    return
+  }
+  form.models.push(name)
+  if (!form.defaultModel) {
+    form.defaultModel = name
+  }
+  form.modelInput = ''
+}
+
+/**
+ * 从列表中移除指定模型。
+ *
+ * @remarks 若移除的是默认模型，自动切换为列表第一个。
+ *
+ * @param index - 模型在 form.models 中的索引
+ */
+function handleRemoveModel(index: number) {
+  const removed = form.models[index]
+  form.models.splice(index, 1)
+  if (form.defaultModel === removed) {
+    form.defaultModel = form.models[0] || ''
+  }
 }
 
 const typeOptions = [
@@ -118,6 +157,7 @@ async function handleSave() {
   }
 
   saving.value = true
+  const wasEditing = !!editingId.value
 
   try {
     const provider: ProviderInfo = {
@@ -126,18 +166,18 @@ async function handleSave() {
       type: form.type,
       apiKey: form.apiKey.trim(),
       baseURL: form.baseURL.trim() || undefined,
-      models: [form.model.trim()],
-      defaultModel: form.model.trim()
+      models: [...form.models],
+      defaultModel: form.defaultModel
     }
     await window.api.settingsProviderAdd(provider)
     await loadProviders()
 
-    resetForm()
+    if (!wasEditing) {
+      resetForm()
+    }
 
     toast.success(
-      editingId.value
-        ? `Provider "${provider.name}" 已更新`
-        : `Provider "${provider.name}" 添加成功`
+      wasEditing ? `Provider "${provider.name}" 已更新` : `Provider "${provider.name}" 添加成功`
     )
   } catch (err) {
     toast.error('保存失败，请重试')
@@ -164,9 +204,14 @@ function fillForm(provider: ProviderInfo) {
   form.type = provider.type as ProviderType
   form.apiKey = provider.apiKey
   form.baseURL = provider.baseURL || ''
-  form.model = provider.defaultModel
+  form.models = [...provider.models]
+  form.defaultModel = provider.defaultModel
+  form.modelInput = ''
 
-  originalSnapshot.value = { ...provider }
+  originalSnapshot.value = {
+    ...provider,
+    models: [...provider.models]
+  }
   syncFormToValidator()
 }
 
@@ -193,7 +238,9 @@ function resetForm() {
   form.type = 'openai'
   form.apiKey = ''
   form.baseURL = ''
-  form.model = ''
+  form.modelInput = ''
+  form.models = []
+  form.defaultModel = ''
   setValue('name', '')
   setValue('apiKey', '')
   setValue('model', '')
@@ -281,15 +328,37 @@ async function handleImport() {
     </div>
 
     <div class="form-group" :class="{ 'has-error': errors.model }">
-      <label class="form-label"> 默认模型 <span class="required">*</span> </label>
-      <input
-        v-model="form.model"
-        class="form-input"
-        placeholder="例如：gpt-4o、claude-sonnet-4-20250514"
-        @input="handleInput"
-        @blur="handleBlur('model')"
-      />
+      <label class="form-label"> 模型列表 <span class="required">*</span> </label>
+
+      <div class="model-input-row">
+        <input
+          v-model="form.modelInput"
+          class="form-input model-input"
+          placeholder="输入模型名称，例如 gpt-4o"
+          @keydown.enter.prevent="handleAddModel"
+        />
+        <button class="add-model-btn" :disabled="!form.modelInput.trim()" @click="handleAddModel">
+          <el-icon><Plus /></el-icon>
+        </button>
+      </div>
+
+      <div v-if="form.models.length > 0" class="model-list">
+        <div
+          v-for="model in form.models"
+          :key="model"
+          :class="['model-chip', { default: model === form.defaultModel }]"
+          @click="form.defaultModel = model"
+        >
+          <el-icon v-if="model === form.defaultModel" class="model-check"><Select /></el-icon>
+          <span class="model-name">{{ model }}</span>
+          <button class="model-remove" @click.stop="handleRemoveModel(form.models.indexOf(model))">
+            <el-icon><Close /></el-icon>
+          </button>
+        </div>
+      </div>
+
       <span v-if="errors.model" class="field-error">{{ errors.model }}</span>
+      <span v-else class="form-hint">添加至少一个模型，点击模型可设为默认</span>
     </div>
 
     <div class="form-actions">
@@ -341,7 +410,7 @@ async function handleImport() {
 
 .panel-desc {
   font-size: 13px;
-  color: #70707a;
+  color: var(--lq-text-faint);
   margin-bottom: 24px;
   line-height: 1.6;
 }
@@ -349,9 +418,9 @@ async function handleImport() {
 .panel-desc code {
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--lq-code-inline-bg);
   font-size: 12px;
-  color: #a2ecfb;
+  color: var(--lq-code-inline-text);
 }
 
 .form-group {
@@ -362,22 +431,22 @@ async function handleImport() {
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   margin-bottom: 6px;
 }
 
 .required {
-  color: #ef4444;
+  color: var(--lq-accent-red);
   margin-left: 2px;
 }
 
 .form-input {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--lq-border-default);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface);
+  color: var(--lq-text-secondary);
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s ease;
@@ -386,11 +455,11 @@ async function handleImport() {
 }
 
 .form-input::placeholder {
-  color: #505058;
+  color: var(--lq-text-placeholder);
 }
 
 .form-input:focus {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: var(--lq-border-focus);
 }
 
 .form-group.has-error .form-input {
@@ -407,7 +476,7 @@ async function handleImport() {
 .form-hint {
   display: block;
   font-size: 12px;
-  color: #505058;
+  color: var(--lq-text-placeholder);
   margin-top: 4px;
 }
 
@@ -418,24 +487,24 @@ async function handleImport() {
 
 .type-option {
   padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--lq-border-default);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #9898a4;
+  background: var(--lq-bg-surface);
+  color: var(--lq-text-muted);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .type-option:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface-hover);
+  color: var(--lq-text-secondary);
 }
 
 .type-option.active {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.3);
-  color: #a5b4fc;
+  background: var(--lq-accent-indigo-bg);
+  border-color: var(--lq-accent-indigo-border);
+  color: var(--lq-accent-indigo-text);
 }
 
 .form-actions {
@@ -448,8 +517,8 @@ async function handleImport() {
   padding: 10px 28px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: #e8e8ed;
+  background: var(--lq-accent-gradient);
+  color: var(--lq-text-on-accent);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -457,7 +526,7 @@ async function handleImport() {
 }
 
 .save-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: var(--lq-accent-gradient-hover);
 }
 
 .save-btn:disabled {
@@ -467,30 +536,30 @@ async function handleImport() {
 
 .cancel-btn {
   padding: 10px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--lq-border-default);
   border-radius: 8px;
   background: transparent;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .cancel-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface);
+  color: var(--lq-text-secondary);
 }
 
 .provider-list {
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--lq-border-default);
 }
 
 .list-title {
   font-size: 14px;
   font-weight: 600;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   margin-bottom: 12px;
 }
 
@@ -501,20 +570,20 @@ async function handleImport() {
   padding: 12px 14px;
   margin-bottom: 6px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--lq-bg-surface);
+  border: 1px solid var(--lq-border-subtle);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .provider-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--lq-bg-surface-hover);
+  border-color: var(--lq-border-default);
 }
 
 .provider-card.selected {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.3);
+  background: var(--lq-accent-indigo-bg);
+  border-color: var(--lq-accent-indigo-border);
 }
 
 .provider-select-indicator {
@@ -522,7 +591,7 @@ async function handleImport() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #818cf8;
+  color: var(--lq-accent-indigo-indicator);
   font-size: 16px;
   flex-shrink: 0;
 }
@@ -536,20 +605,20 @@ async function handleImport() {
 .provider-name {
   font-size: 14px;
   font-weight: 500;
-  color: #d0d0d8;
+  color: var(--lq-text-secondary);
 }
 
 .provider-type {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 4px;
-  background: rgba(99, 102, 241, 0.12);
-  color: #a5b4fc;
+  background: var(--lq-accent-indigo-bg);
+  color: var(--lq-accent-indigo-text);
 }
 
 .provider-model {
   font-size: 12px;
-  color: #70707a;
+  color: var(--lq-text-faint);
 }
 
 .remove-btn {
@@ -561,14 +630,14 @@ async function handleImport() {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #60606a;
+  color: var(--lq-text-hint);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .remove-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: var(--lq-accent-red-bg-hover);
+  color: var(--lq-accent-red);
 }
 
 .import-export {
@@ -576,7 +645,7 @@ async function handleImport() {
   gap: 12px;
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--lq-border-default);
 }
 
 .action-btn {
@@ -584,17 +653,115 @@ async function handleImport() {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--lq-border-default);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #9898a4;
+  background: var(--lq-bg-surface);
+  color: var(--lq-text-muted);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .action-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface-hover);
+  color: var(--lq-text-secondary);
+}
+
+.model-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.model-input {
+  flex: 1;
+}
+
+.add-model-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--lq-border-default);
+  border-radius: 8px;
+  background: var(--lq-bg-surface);
+  color: var(--lq-text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.add-model-btn:hover:not(:disabled) {
+  background: var(--lq-accent-indigo-bg);
+  border-color: var(--lq-accent-indigo-border);
+  color: var(--lq-accent-indigo-text);
+}
+
+.add-model-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.model-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--lq-border-default);
+  border-radius: 6px;
+  background: var(--lq-bg-surface);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.model-chip:hover {
+  background: var(--lq-bg-surface-hover);
+  border-color: var(--lq-border-strong);
+}
+
+.model-chip.default {
+  background: var(--lq-accent-indigo-bg);
+  border-color: var(--lq-accent-indigo-border);
+}
+
+.model-check {
+  font-size: 12px;
+  color: var(--lq-accent-indigo-indicator);
+  flex-shrink: 0;
+}
+
+.model-name {
+  font-size: 13px;
+  color: var(--lq-text-secondary);
+}
+
+.model-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--lq-text-hint);
+  cursor: pointer;
+  font-size: 10px;
+  flex-shrink: 0;
+  transition: all 0.1s ease;
+}
+
+.model-remove:hover {
+  background: var(--lq-accent-red-bg-hover);
+  color: var(--lq-accent-red);
 }
 </style>

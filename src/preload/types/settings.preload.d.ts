@@ -34,4 +34,8 @@ export interface SettingsApi {
   settingsExport: () => Promise<boolean>
   /** 从用户指定路径导入配置，返回导入的 Provider 列表 */
   settingsImport: () => Promise<ProviderInfo[] | null>
+  /** 加载主题偏好，返回 'dark' 或 'light' */
+  settingsLoadTheme: () => Promise<'dark' | 'light'>
+  /** 保存主题偏好 */
+  settingsSaveTheme: (theme: 'dark' | 'light') => Promise<void>
 }

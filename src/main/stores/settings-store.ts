@@ -31,7 +31,8 @@ const DEFAULT_SETTINGS: SettingsData = {
   version: 1,
   providers: [],
   selectedProviderId: null,
-  pet: { ...DEFAULT_PET }
+  pet: { ...DEFAULT_PET },
+  theme: 'dark'
 }
 
 /** 内存中的设置缓存 */
@@ -63,7 +64,8 @@ export function loadSettings(): SettingsData {
         visible: parsed.pet?.visible ?? DEFAULT_PET.visible,
         scale: parsed.pet?.scale ?? DEFAULT_PET.scale,
         debug: parsed.pet?.debug ?? DEFAULT_PET.debug
-      }
+      },
+      theme: parsed.theme || DEFAULT_SETTINGS.theme
     }
     return cachedSettings
   } catch (err) {
@@ -222,5 +224,26 @@ export function getPetSettings(): PetSettings {
 export function savePetSettings(pet: Partial<PetSettings>): void {
   const settings = cachedSettings || loadSettings()
   settings.pet = { ...settings.pet, ...pet }
+  saveSettings(settings)
+}
+
+/**
+ * 获取主题偏好。
+ *
+ * @returns 主题值，'dark' 或 'light'
+ */
+export function getTheme(): 'dark' | 'light' {
+  if (!cachedSettings) loadSettings()
+  return cachedSettings?.theme || 'dark'
+}
+
+/**
+ * 保存主题偏好。
+ *
+ * @param theme - 主题值，'dark' 或 'light'
+ */
+export function saveTheme(theme: 'dark' | 'light'): void {
+  const settings = cachedSettings || loadSettings()
+  settings.theme = theme
   saveSettings(settings)
 }

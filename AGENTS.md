@@ -81,9 +81,11 @@ src/
         │   ├── ChatArea.vue
         │   ├── ChatInput.vue
         │   ├── MessageList.vue
+        │   ├── TypingIndicator.vue   # AI 等待回复时的加载动画
         │   └── settings/
         │       ├── AiProviderPanel.vue
-        │       └── PetPanel.vue
+        │       ├── PetPanel.vue
+        │       └── GeneralPanel.vue   # 通用设置（含主题切换）
         ├── composables/     # 组合式函数
         │   ├── useToast.ts
         │   └── useFormValidation.ts
@@ -93,7 +95,8 @@ src/
         ├── router/          # Vue Router 配置
         │   └── index.ts
         ├── stores/          # Pinia 状态管理
-        │   └── chat.ts      # 会话 Store（单会话懒加载架构）
+        │   ├── chat.ts      # 会话 Store（单会话懒加载架构）
+        │   └── theme.ts     # 主题 Store（明暗切换 + 持久化）
         └── types/           # 渲染进程类型
             ├── provider.d.ts
             └── store/
@@ -141,7 +144,8 @@ src/
 
 ```
 ~/.little-q-desktop/
-├── settings.json          # Provider 配置（Providers + selectedProviderId + pet）
+├── settings.json          # Provider 配置（Providers + selectedProviderId + pet + theme）
+├── theme                  # 主题偏好：'dark' | 'light'
 └── sessions/
     ├── sessions.json      # 会话索引（id、title、createdAt、updatedAt — 不含 messages）
     └── {YYYY-MM-DD}/      # 按会话创建日期分目录
@@ -150,12 +154,12 @@ src/
 
 ### 模块职责
 
-| 模块                  | 文件                                    | 职责                     |
-| --------------------- | --------------------------------------- | ------------------------ |
-| 设置 Store            | `src/main/stores/settings-store.ts`     | Provider + 宠物配置读写  |
-| 会话 Store            | `src/main/stores/session-store.ts`      | 会话索引 + 详情读写      |
-| 设置类型              | `src/main/types/store/settings-store.d.ts` | PetSettings、SettingsData |
-| 会话类型              | `src/main/types/store/session-store.d.ts`  | SessionMessage、SessionSummary 等 |
+| 模块       | 文件                                       | 职责                              |
+| ---------- | ------------------------------------------ | --------------------------------- |
+| 设置 Store | `src/main/stores/settings-store.ts`        | Provider + 宠物 + 主题配置读写    |
+| 会话 Store | `src/main/stores/session-store.ts`         | 会话索引 + 详情读写               |
+| 设置类型   | `src/main/types/store/settings-store.d.ts` | PetSettings、SettingsData         |
+| 会话类型   | `src/main/types/store/session-store.d.ts`  | SessionMessage、SessionSummary 等 |
 
 - **IPC 通道**：`settings:*`（设置）、`sessions:list/load/save/delete`（会话）、`pet:*`（宠物）
 - **渲染进程**：`stores/chat.ts` 通过 `window.api.sessions*` 调用 IPC
@@ -214,6 +218,25 @@ src/
 - **流式输出中**：显示原始纯文本，不渲染 Markdown
 - **`Message.streaming` 字段**：`ChatInput.vue` 在创建 assistant 消息时设为 `true`，在 `done`/`error`/`catch` 中调用 `chatStore.finishStreaming()` 置为 `false`
 
+## 主题系统
+
+### 架构
+
+- **主题 Store**：`src/renderer/src/stores/theme.ts`，采用 Pinia setup store，管理 `isDark` 状态
+- **CSS 变量体系**：`src/renderer/src/assets/base.css` 中定义 `:root`（亮色：雾蓝冷色系）和 `html.dark`（暗色）两套 `--lq-*` 变量
+- **Element Plus 集成**：导入 `element-plus/theme-chalk/dark/css-vars.css`，通过 `html.dark` class 自动切换 EP 组件主题
+- **代码高亮**：`highlight.js` 使用 `github-dark` 主题作为基础，亮色模式通过 `html:not(.dark)` 覆盖关键选择器颜色
+
+### 主题切换流程
+
+1. `main.ts` 启动时调用 `themeStore.init()` 从主进程加载持久化偏好
+2. `GeneralPanel.vue` 中的 `el-switch` 直接绑定 `themeStore.isDark`
+3. `watch(isDark)` 自动同步 `html.dark` class + 通过 IPC 持久化
+
+### 颜色映射
+
+所有组件 scoped 样式通过 `var(--lq-*)` 引用全局变量，亮暗切换时无需修改组件代码。
+
 ## 宠物窗口
 
 ### 生命周期
@@ -232,11 +255,11 @@ src/
 
 ### 相关文件
 
-| 文件                                | 职责                         |
-| ----------------------------------- | ---------------------------- |
-| `src/main/windows/pet-window.ts`    | 窗口创建、销毁、状态管理     |
-| `src/main/ipc-handlers/pet-ipc-handlers.ts` | Pet IPC 处理器       |
-| `src/preload/pet.preload.ts`        | Pet API 暴露到 window.api    |
-| `src/renderer/pet.html`             | 宠物窗口 HTML 入口           |
-| `src/renderer/src/pet.ts`           | 宠物窗口渲染逻辑             |
-| `src/renderer/src/components/settings/PetPanel.vue` | 宠物设置面板 |
+| 文件                                                | 职责                      |
+| --------------------------------------------------- | ------------------------- |
+| `src/main/windows/pet-window.ts`                    | 窗口创建、销毁、状态管理  |
+| `src/main/ipc-handlers/pet-ipc-handlers.ts`         | Pet IPC 处理器            |
+| `src/preload/pet.preload.ts`                        | Pet API 暴露到 window.api |
+| `src/renderer/pet.html`                             | 宠物窗口 HTML 入口        |
+| `src/renderer/src/pet.ts`                           | 宠物窗口渲染逻辑          |
+| `src/renderer/src/components/settings/PetPanel.vue` | 宠物设置面板              |

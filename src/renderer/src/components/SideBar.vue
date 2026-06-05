@@ -104,9 +104,9 @@ function handleDelete(id: string, e: Event) {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(22, 22, 24, 0.85);
+  background: var(--lq-bg-sidebar);
   backdrop-filter: blur(24px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--lq-border-default);
   user-select: none;
   transition:
     width 0.25s ease,
@@ -135,7 +135,7 @@ function handleDelete(id: string, e: Event) {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: #e8e8ed;
+  color: var(--lq-text-primary);
   white-space: nowrap;
 }
 
@@ -148,15 +148,15 @@ function handleDelete(id: string, e: Event) {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s ease;
 }
 
 .collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8e8ed;
+  background: var(--lq-bg-surface-hover);
+  color: var(--lq-text-primary);
 }
 
 .new-chat-btn {
@@ -165,10 +165,10 @@ function handleDelete(id: string, e: Event) {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--lq-border-strong);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #c8c8d0;
+  background: var(--lq-bg-surface);
+  color: var(--lq-text-secondary);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -183,9 +183,9 @@ function handleDelete(id: string, e: Event) {
 }
 
 .new-chat-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: #e8e8ed;
+  background: var(--lq-bg-surface-hover);
+  border-color: var(--lq-border-strong);
+  color: var(--lq-text-primary);
 }
 
 .chat-list {
@@ -193,6 +193,8 @@ function handleDelete(id: string, e: Event) {
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--lq-scrollbar-thumb) transparent;
 }
 
 .sidebar.collapsed .chat-list {
@@ -207,7 +209,7 @@ function handleDelete(id: string, e: Event) {
   margin-bottom: 2px;
   border-radius: 8px;
   cursor: pointer;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   font-size: 13px;
   transition: all 0.15s ease;
   overflow: hidden;
@@ -220,13 +222,13 @@ function handleDelete(id: string, e: Event) {
 }
 
 .chat-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface-hover);
+  color: var(--lq-text-secondary);
 }
 
 .chat-item.active {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8e8ed;
+  background: var(--lq-bg-surface-active);
+  color: var(--lq-text-primary);
 }
 
 .chat-icon {
@@ -250,7 +252,7 @@ function handleDelete(id: string, e: Event) {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #60606a;
+  color: var(--lq-text-hint);
   cursor: pointer;
   opacity: 0;
   transition: all 0.15s ease;
@@ -262,13 +264,13 @@ function handleDelete(id: string, e: Event) {
 }
 
 .delete-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  background: var(--lq-accent-red-bg-hover);
+  color: var(--lq-accent-red);
 }
 
 .sidebar-footer {
   padding: 12px 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--lq-border-default);
 }
 
 .sidebar.collapsed .sidebar-footer {
@@ -281,7 +283,7 @@ function handleDelete(id: string, e: Event) {
   gap: 10px;
   padding: 10px 8px;
   border-radius: 8px;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -294,7 +296,7 @@ function handleDelete(id: string, e: Event) {
 }
 
 .footer-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface-hover);
+  color: var(--lq-text-secondary);
 }
 </style>

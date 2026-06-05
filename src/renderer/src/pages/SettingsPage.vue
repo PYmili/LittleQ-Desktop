@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AiProviderPanel from '@renderer/components/settings/AiProviderPanel.vue'
 import PetPanel from '@renderer/components/settings/PetPanel.vue'
+import GeneralPanel from '@renderer/components/settings/GeneralPanel.vue'
 
 const router = useRouter()
 
@@ -76,10 +77,7 @@ function goBack() {
 
         <PetPanel v-else-if="activeCategory === 'pet'" />
 
-        <div v-else-if="activeCategory === 'general'" class="placeholder-panel">
-          <el-icon><Setting /></el-icon>
-          <p>通用设置（开发中）</p>
-        </div>
+        <GeneralPanel v-else-if="activeCategory === 'general'" />
 
         <div v-else-if="activeCategory === 'about'" class="placeholder-panel">
           <el-icon><InfoFilled /></el-icon>
@@ -97,7 +95,7 @@ function goBack() {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #0d0d0f;
+  background: var(--lq-bg-app);
 }
 
 .settings-sidebar {
@@ -106,9 +104,9 @@ function goBack() {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: rgba(22, 22, 24, 0.85);
+  background: var(--lq-bg-sidebar);
   backdrop-filter: blur(24px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--lq-border-default);
 }
 
 .settings-logo {
@@ -118,13 +116,13 @@ function goBack() {
   padding: 20px 16px 16px;
   font-size: 18px;
   font-weight: 700;
-  color: #e8e8ed;
+  color: var(--lq-text-primary);
   cursor: pointer;
   transition: color 0.15s ease;
 }
 
 .settings-logo:hover {
-  color: #a2ecfb;
+  color: var(--lq-accent-indigo-text);
 }
 
 .category-nav {
@@ -132,7 +130,7 @@ function goBack() {
   padding: 8px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: var(--lq-scrollbar-thumb) transparent;
 }
 
 .category-nav::-webkit-scrollbar {
@@ -144,12 +142,12 @@ function goBack() {
 }
 
 .category-nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--lq-scrollbar-thumb);
   border-radius: 2px;
 }
 
 .category-nav::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--lq-scrollbar-thumb-hover);
 }
 
 .category-item {
@@ -159,20 +157,20 @@ function goBack() {
   padding: 10px 12px;
   margin-bottom: 2px;
   border-radius: 8px;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .category-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #d0d0d8;
+  background: var(--lq-bg-surface-hover);
+  color: var(--lq-text-secondary);
 }
 
 .category-item.active {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8e8ed;
+  background: var(--lq-bg-surface-active);
+  color: var(--lq-text-primary);
 }
 
 .settings-content {
@@ -187,13 +185,13 @@ function goBack() {
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--lq-border-default);
 }
 
 .settings-header h2 {
   font-size: 18px;
   font-weight: 600;
-  color: #e8e8ed;
+  color: var(--lq-text-primary);
   margin: 0;
 }
 
@@ -206,15 +204,15 @@ function goBack() {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #9898a4;
+  color: var(--lq-text-muted);
   cursor: pointer;
   font-size: 18px;
   transition: all 0.15s ease;
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8e8ed;
+  background: var(--lq-bg-surface-hover);
+  color: var(--lq-text-primary);
 }
 
 .settings-body {
@@ -222,7 +220,7 @@ function goBack() {
   overflow-y: auto;
   padding: 24px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: var(--lq-scrollbar-thumb) transparent;
 }
 
 .settings-body::-webkit-scrollbar {
@@ -234,12 +232,12 @@ function goBack() {
 }
 
 .settings-body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--lq-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .settings-body::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--lq-scrollbar-thumb-hover);
 }
 
 .placeholder-panel {
@@ -248,7 +246,7 @@ function goBack() {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #60606a;
+  color: var(--lq-text-hint);
   gap: 12px;
 }
 
@@ -258,11 +256,11 @@ function goBack() {
 
 .placeholder-panel p {
   font-size: 16px;
-  color: #808090;
+  color: var(--lq-text-dim);
 }
 
 .about-desc {
   font-size: 13px;
-  color: #505058;
+  color: var(--lq-text-placeholder);
 }
 </style>

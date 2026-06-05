@@ -31,4 +31,6 @@ export interface SettingsData {
   selectedProviderId: string | null
   /** 宠物桌面组件设置 */
   pet: PetSettings
+  /** 主题偏好：'dark' 或 'light' */
+  theme: 'dark' | 'light'
 }

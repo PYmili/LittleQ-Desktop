@@ -129,7 +129,7 @@ async function toggleDebug() {
 
 .panel-desc {
   font-size: 13px;
-  color: #808090;
+  color: var(--lq-text-dim);
   margin: 0 0 24px;
   line-height: 1.6;
 }
@@ -161,11 +161,11 @@ async function toggleDebug() {
 .label-title {
   font-size: 14px;
   font-weight: 500;
-  color: #d0d0d8;
+  color: var(--lq-text-secondary);
 }
 
 .label-hint {
   font-size: 12px;
-  color: #60606a;
+  color: var(--lq-text-hint);
 }
 </style>

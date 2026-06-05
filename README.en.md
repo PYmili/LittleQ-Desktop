@@ -6,7 +6,7 @@
   <br>
 </h1>
 
-<p align="center">An AI-powered desktop assistant with agent capabilities, multi-provider support, and real-time streaming.</p>
+<p align="center">An AI-powered desktop assistant with agent capabilities, model switching, theme system, and real-time streaming.</p>
 
 <p align="center">
   <a href="./README.md">中文</a>
@@ -46,8 +46,10 @@ All API keys stay on your machine — **nothing leaves your computer** except th
 | Category              | Details                                                                                   |
 | --------------------- | ----------------------------------------------------------------------------------------- |
 | **AI Providers**      | OpenAI, Anthropic Claude, DeepSeek, or any OpenAI-compatible API (Ollama, vLLM, etc.)     |
+| **Model Switching**   | Multiple models per provider with one-click switching from chat input                     |
 | **Agent Tools**       | Built-in `readFile` / `writeFile` tools let the AI interact with your project files       |
 | **Streaming**         | Real-time response streaming with Markdown rendering and code syntax highlighting         |
+| **Theme System**      | Dark / fog-blue light theme with CSS variables and Element Plus integration               |
 | **Desktop Pet**       | Draggable SVG desktop companion with scale control and position memory                    |
 | **Sessions**          | Create, switch, and delete chat sessions; auto-persisted to disk (`~/.little-q-desktop/`) |
 | **Config Management** | One-click export/import of provider settings for easy sharing and migration               |
@@ -151,13 +153,15 @@ src/
         │   ├── ChatArea.vue
         │   ├── ChatInput.vue
         │   ├── MessageList.vue
+        │   ├── TypingIndicator.vue
         │   └── settings/
         │       ├── AiProviderPanel.vue
-        │       └── PetPanel.vue
+        │       ├── PetPanel.vue
+        │       └── GeneralPanel.vue
         ├── composables/       #   Composables
         ├── pages/             #   Route pages
         ├── router/            #   Vue Router
-        ├── stores/            #   Pinia stores (chat)
+        ├── stores/            #   Pinia stores (chat, theme)
         └── types/             #   Renderer type declarations
 ```
 
@@ -165,7 +169,7 @@ src/
 
 ```
 ~/.little-q-desktop/
-├── settings.json          # Provider configs + selected provider + pet settings
+├── settings.json          # Provider configs + selected provider + theme + pet settings
 └── sessions/
     ├── sessions.json      # Session index (id, title, timestamps)
     └── YYYY-MM-DD/        # Sessions organized by creation date
@@ -210,7 +214,7 @@ A draggable SVG desktop companion using transparent frameless window with `type:
 | Base URL | `https://api.deepseek.com/v1` |
 | Models   | `deepseek-v4-flash`           |
 
-The first model in the list becomes the default for that provider.
+Select a model from the list as the default; switch models anytime from the chat input indicator.
 
 ## Development
 
