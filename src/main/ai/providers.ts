@@ -1,5 +1,6 @@
 import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai'
 import { createAnthropic, type AnthropicProvider } from '@ai-sdk/anthropic'
+import { createDeepSeek, type DeepSeekProvider } from '@ai-sdk/deepseek'
 import type { LanguageModel } from 'ai'
 import type { ProviderSettings } from '../types'
 
@@ -10,7 +11,16 @@ import type { ProviderSettings } from '../types'
  * 以 ProviderSettings.id 为键存储已初始化的 Provider 实例。
  * 每个 Provider 持有独立的 API Key 和 Base URL。
  */
-const providerMap = new Map<string, OpenAIProvider | AnthropicProvider>()
+const providerMap = new Map<string, OpenAIProvider | AnthropicProvider | DeepSeekProvider>()
+
+/**
+ * Provider 设置元数据。
+ *
+ * @remarks
+ * 存储 ProviderSettings 中影响 API 调用的配置项
+ *（如 useResponsesApi），供 getModel 时使用。
+ */
+const providerMetaMap = new Map<string, { useResponsesApi: boolean }>()
 
 /**
  * 注册一个 AI Provider。
@@ -54,24 +64,42 @@ export function registerProvider(settings: ProviderSettings): void {
         })
       )
       break
+    case 'deepseek':
+      providerMap.set(
+        settings.id,
+        createDeepSeek({
+          apiKey: settings.apiKey,
+          baseURL: settings.baseURL || 'https://api.deepseek.com'
+        })
+      )
+      break
   }
+
+  // 存储 API 模式偏好：仅 openai 类型可启用 Responses API
+  providerMetaMap.set(settings.id, {
+    useResponsesApi: settings.useResponsesApi === true && settings.type === 'openai'
+  })
 }
 
 /**
  * 根据 Provider ID 与模型名获取语言模型实例。
  *
  * @remarks
- * OpenAI 类 Provider 强制使用 `.chat()` 调用 Chat Completions API，
- * 确保兼容 DeepSeek 等第三方接口（不支持 OpenAI Responses API）。
+ * - OpenAI 类型且 `useResponsesApi = true`：走 Responses API（`/v1/responses`），支持 reasoning 流式输出
+ * - 其余所有类型：走 Chat Completions / Messages API（`.chat()`），兼容第三方接口
  *
  * @param providerId - 注册时的 ProviderSettings.id
- * @param model - 模型 ID（如 `'gpt-4o'`、`'claude-sonnet-4-20250514'`）
+ * @param model - 模型 ID（如 `'gpt-5.5'`、`'deepseek-v4-flash'`）
  * @returns 语言模型实例，若 Provider 未注册则返回 `null`
  */
 export function getModel(providerId: string, model: string): LanguageModel | null {
   const provider = providerMap.get(providerId)
   if (!provider) return null
-  // 统一走 Chat Completions / Messages API，不使用 Responses API
+
+  const meta = providerMetaMap.get(providerId)
+  if (meta?.useResponsesApi) {
+    return provider(model)
+  }
   return provider.chat(model)
 }
 
@@ -82,6 +110,7 @@ export function getModel(providerId: string, model: string): LanguageModel | nul
  */
 export function unregisterProvider(providerId: string): void {
   providerMap.delete(providerId)
+  providerMetaMap.delete(providerId)
 }
 
 /**
@@ -92,4 +121,15 @@ export function unregisterProvider(providerId: string): void {
  */
 export function isProviderAvailable(providerId: string): boolean {
   return providerMap.has(providerId)
+}
+
+/**
+ * 清空所有已注册的 Provider。
+ *
+ * @remarks
+ * 在导入配置时调用，避免旧 Provider 残留。
+ */
+export function clearAllProviders(): void {
+  providerMap.clear()
+  providerMetaMap.clear()
 }

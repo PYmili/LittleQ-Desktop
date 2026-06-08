@@ -58,6 +58,10 @@ export async function runAgent(
           onChunk({ type: 'content', text: part.text })
           break
 
+        case 'reasoning-delta':
+          onChunk({ type: 'reasoning', text: part.text })
+          break
+
         case 'error': {
           const message = formatErrorMessage(part.error)
           console.error('[Agent] 流内错误:', message)

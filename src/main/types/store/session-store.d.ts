@@ -8,6 +8,8 @@ export interface SessionMessage {
   role: 'user' | 'assistant'
   /** 消息正文内容 */
   content: string
+  /** AI 思考过程内容（可选，如 DeepSeek-R1 的 CoT） */
+  reasoning?: string
   /** 消息时间戳（Unix 毫秒） */
   timestamp: number
 }

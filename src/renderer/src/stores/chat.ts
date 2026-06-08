@@ -18,6 +18,7 @@ function cleanForSave(conv: ConversationModel) {
       id: m.id,
       role: m.role,
       content: m.content,
+      reasoning: m.reasoning,
       timestamp: m.timestamp
     })),
     createdAt: conv.createdAt,

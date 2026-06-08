@@ -6,7 +6,7 @@
   <br>
 </h1>
 
-<p align="center">An AI-powered desktop assistant with agent capabilities, model switching, theme system, and real-time streaming.</p>
+<p align="center">An AI-powered desktop assistant with agent capabilities, model switching, reasoning display, theme system, and real-time streaming.</p>
 
 <p align="center">
   <a href="./README.md">中文</a>
@@ -47,6 +47,7 @@ All API keys stay on your machine — **nothing leaves your computer** except th
 | --------------------- | ----------------------------------------------------------------------------------------- |
 | **AI Providers**      | OpenAI, Anthropic Claude, DeepSeek, or any OpenAI-compatible API (Ollama, vLLM, etc.)     |
 | **Model Switching**   | Multiple models per provider with one-click switching from chat input                     |
+| **Reasoning Display** | Collapsible AI reasoning/thinking display (DeepSeek-R1 / OpenAI Responses API)            |
 | **Agent Tools**       | Built-in `readFile` / `writeFile` tools let the AI interact with your project files       |
 | **Streaming**         | Real-time response streaming with Markdown rendering and code syntax highlighting         |
 | **Theme System**      | Dark / fog-blue light theme with CSS variables and Element Plus integration               |
@@ -58,15 +59,15 @@ All API keys stay on your machine — **nothing leaves your computer** except th
 
 ## Tech Stack
 
-| Layer             | Technology                                                 |
-| ----------------- | ---------------------------------------------------------- |
-| **Desktop Shell** | Electron 42                                                |
-| **Build Tool**    | electron-vite                                              |
-| **Frontend**      | Vue 3 (Composition API) + Pinia + Vue Router               |
-| **UI Framework**  | Element Plus                                               |
-| **AI SDK**        | Vercel AI SDK 6.x + `@ai-sdk/openai` + `@ai-sdk/anthropic` |
-| **Markdown**      | markdown-it + highlight.js                                 |
-| **Language**      | TypeScript (strict)                                        |
+| Layer             | Technology                                                                      |
+| ----------------- | ------------------------------------------------------------------------------- |
+| **Desktop Shell** | Electron 42                                                                     |
+| **Build Tool**    | electron-vite                                                                   |
+| **Frontend**      | Vue 3 (Composition API) + Pinia + Vue Router                                    |
+| **UI Framework**  | Element Plus                                                                    |
+| **AI SDK**        | Vercel AI SDK 6.x + `@ai-sdk/openai` + `@ai-sdk/anthropic` + `@ai-sdk/deepseek` |
+| **Markdown**      | markdown-it + highlight.js                                                      |
+| **Language**      | TypeScript (strict)                                                             |
 
 ## Quick Start
 
@@ -206,13 +207,12 @@ A draggable SVG desktop companion using transparent frameless window with `type:
 2. Click **添加 Provider**
 3. Fill in the provider details:
 
-| Field    | Example                       |
-| -------- | ----------------------------- |
-| Name     | My DeepSeek                   |
-| Type     | openai-compatible             |
-| API Key  | `sk-xxx`                      |
-| Base URL | `https://api.deepseek.com/v1` |
-| Models   | `deepseek-v4-flash`           |
+| Field   | Example             |
+| ------- | ------------------- |
+| Name    | My DeepSeek         |
+| Type    | deepseek            |
+| API Key | `sk-xxx`            |
+| Models  | `deepseek-v4-flash`           |
 
 Select a model from the list as the default; switch models anytime from the chat input indicator.
 

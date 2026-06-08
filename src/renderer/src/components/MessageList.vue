@@ -127,6 +127,23 @@ async function copyMessage(content: string) {
       :class="['message', msg.role]"
     >
       <div class="message-bubble">
+        <!-- AI 思考过程（可折叠） -->
+        <div
+          v-if="msg.role === 'assistant' && (msg.reasoning || msg.streaming)"
+          class="reasoning-section"
+        >
+          <el-collapse>
+            <el-collapse-item>
+              <template #title>
+                <span class="reasoning-title">思考过程</span>
+              </template>
+              <div class="reasoning-content">
+                {{ msg.reasoning || '思考中...' }}
+              </div>
+            </el-collapse-item>
+          </el-collapse>
+        </div>
+
         <TypingIndicator v-if="msg.role === 'assistant' && msg.streaming && !msg.content" />
         <!-- eslint-disable-next-line vue/no-v-html -->
         <div
@@ -409,5 +426,52 @@ async function copyMessage(content: string) {
 .message-content.markdown-body :deep(img) {
   max-width: 100%;
   border-radius: 6px;
+}
+
+/* 思考过程折叠面板 */
+.reasoning-section {
+  margin-bottom: 10px;
+}
+
+.reasoning-section :deep(.el-collapse) {
+  border: none;
+}
+
+.reasoning-section :deep(.el-collapse-item__header) {
+  height: 30px;
+  line-height: 30px;
+  font-size: 12px;
+  color: var(--lq-text-muted);
+  background: var(--lq-bg-surface-hover);
+  border-radius: 6px;
+  padding: 0 10px;
+  border: none;
+}
+
+.reasoning-section :deep(.el-collapse-item__wrap) {
+  border: none;
+  background: transparent;
+}
+
+.reasoning-section :deep(.el-collapse-item__content) {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--lq-text-muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.reasoning-title {
+  font-size: 12px;
+  color: var(--lq-text-muted);
+}
+
+.reasoning-content {
+  font-size: 12px;
+  color: var(--lq-text-muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

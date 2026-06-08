@@ -7,7 +7,7 @@
  */
 
 /** 支持的 Provider 类型 */
-export type ProviderType = 'openai' | 'openai-compatible' | 'anthropic'
+export type ProviderType = 'openai' | 'openai-compatible' | 'anthropic' | 'deepseek'
 
 /** 用户配置的单个 AI Provider */
 export interface ProviderSettings {
@@ -25,6 +25,8 @@ export interface ProviderSettings {
   models: string[]
   /** 默认模型 */
   defaultModel: string
+  /** 是否使用 Responses API（仅 OpenAI 类型有效，默认 false 走 Chat Completions API） */
+  useResponsesApi?: boolean
 }
 
 /** 某次对话中使用的 Provider 与模型选择 */
@@ -43,7 +45,7 @@ export interface ChatMessage {
 
 /** 流式响应 chunk，main → renderer 推送格式 */
 export interface StreamChunk {
-  type: 'content' | 'tool_call' | 'done' | 'error'
+  type: 'content' | 'tool_call' | 'done' | 'error' | 'reasoning'
   text?: string
   toolName?: string
   error?: string

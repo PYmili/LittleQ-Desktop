@@ -44,7 +44,7 @@ src/
 │   │   └── session-store.ts  # 会话持久化（~/.little-q-desktop/sessions.json + 日期目录）
 │   ├── types/                # 主进程类型声明
 │   │   ├── index.ts           # Barrel 统一导出
-│   │   ├── ai.d.ts            # ProviderSettings、ChatConfig、StreamChunk 等
+│   │   ├── ai.d.ts            # ProviderSettings（含 useResponsesApi）、ChatConfig、StreamChunk 等
 │   │   └── store/             # Store 类型
 │   │       ├── settings-store.d.ts  # PetSettings、SettingsData
 │   │       └── session-store.d.ts   # SessionMessage、SessionSummary、SessionData、SessionsIndex
@@ -98,7 +98,7 @@ src/
         │   ├── chat.ts      # 会话 Store（单会话懒加载架构）
         │   └── theme.ts     # 主题 Store（明暗切换 + 持久化）
         └── types/           # 渲染进程类型
-            ├── provider.d.ts
+            ├── provider.ts      # ProviderType、ProviderInfo
             └── store/
                 └── chat.d.ts  # ConversationModel、ConversationSummary、MessageModel
 ```
@@ -179,7 +179,7 @@ src/
 - **创建会话**：直接覆盖 `activeConversation`，旧会话已在上一步持久化
 - **删除会话**：先删磁盘（`await`）→ 成功后清理摘要列表 → 若匹配活跃会话则清空并切换
 - **持久化时机**：`addMessage` 非流式消息立即持久化；流式消息延迟到 `finishStreaming` 时持久化（避免写入空 content）
-- **清理**：`deleteSession` 会实际删除空的日期目录（`rmdirSync`）
+- `cleanForSave()` 序列化时保留 `reasoning` 字段（思考过程内容）
 
 ## AI 集成
 
@@ -190,13 +190,17 @@ src/
 | `ai`                | ^6.x | `streamText`、`stepCountIs`、`ModelMessage`、`APICallError` |
 | `@ai-sdk/openai`    | ^3.x | OpenAI / OpenAI 兼容接口                                    |
 | `@ai-sdk/anthropic` | ^3.x | Anthropic Claude                                            |
+| `@ai-sdk/deepseek`  | ^2.x | DeepSeek（原生 reasoning 支持）                             |
 | `zod`               | ^4.x | Agent 工具参数校验                                          |
 
 ### Provider 注册与兼容性
 
-- **Provider 注册表**：`src/main/ai/providers.ts` 中 `providerMap: Map<string, OpenAIProvider | AnthropicProvider>`
+- **Provider 注册表**：`src/main/ai/providers.ts` 中 `providerMap: Map<string, OpenAIProvider | AnthropicProvider | DeepSeekProvider>`，另有 `providerMetaMap` 存储 API 模式等元数据
 - **启动初始化**：`ipc-handlers/settings-ipc-handlers.ts` 的 `initProviders()` 在应用启动时从 `settings.json` 加载所有 Provider 并注册到 `providerMap`
-- **必须使用 `.chat()`**：`@ai-sdk/openai` v3 默认调用 `provider(model)` 走 **Responses API**（`/v1/responses`），DeepSeek 等第三方接口不支持。**必须**通过 `provider.chat(model)` 强制使用 Chat Completions API（`/v1/chat/completions`）
+- **API 模式选择**：`getModel()` 根据 `ProviderSettings.useResponsesApi` 决定调用方式：
+  - `openai` + `useResponsesApi = true` → `provider(model)` 走 Responses API（`/v1/responses`，支持 reasoning 流式输出）
+  - 其余所有类型 → `provider.chat(model)` 走 Chat Completions / Messages API（`/v1/chat/completions`）
+- **内存清理**：删除 Provider 时同步调用 `unregisterProvider()` 清理 `providerMap` 和 `providerMetaMap`；导入配置时先调用 `clearAllProviders()` 避免旧 Provider 残留
 - **Anthropic 兼容**：`AnthropicProvider` 同样有 `.chat()` 方法（映射到 Messages API），无需分支判断
 
 ### Agent 编排
@@ -204,7 +208,7 @@ src/
 - `streamText` + `stepCountIs(10)` 实现 ReAct 循环，LLM 在 10 步内反复迭代（判断是否需要调用工具）
 - **使用 `fullStream` 而非 `textStream`**：v6 中 API 错误（如余额不足、鉴权失败）作为 `fullStream` 中的 `error` part 出现，`textStream`（`AsyncIterableStream<string>`）只产出文本字符串，无法捕获这类错误
 - **错误提取**：`formatErrorMessage()` 使用 `APICallError.isInstance()` 检测 API 错误，优先提取 `data.error.message` 作为用户消息，拼接 `[HTTP xxx]` 前缀
-- **内容推送**：`text-delta` → `type: 'content'`；`error` → `type: 'error'`（含提取后的消息）；`tool-error` → `type: 'error'`；其他 part 类型（`tool-call`、`start-step` 等）不推送到前端
+- **内容推送**：`text-delta` → `type: 'content'`；`reasoning-delta` → `type: 'reasoning'`（思考过程，由 DeepSeek Provider 原生支持或 OpenAI Responses API 提供）；`error` → `type: 'error'`（含提取后的消息）；`tool-error` → `type: 'error'`；其他 part 类型（`tool-call`、`start-step` 等）不推送到前端
 
 ### IPC 注意事项
 

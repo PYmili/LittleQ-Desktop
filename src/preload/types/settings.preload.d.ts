@@ -6,7 +6,7 @@ export interface ProviderInfo {
   id: string
   /** 用户自定义的显示名称 */
   name: string
-  /** Provider 类型（openai / openai-compatible / anthropic） */
+  /** Provider 类型（openai / openai-compatible / anthropic / deepseek） */
   type: string
   /** API Key */
   apiKey: string
@@ -16,6 +16,8 @@ export interface ProviderInfo {
   models: string[]
   /** 默认模型 */
   defaultModel: string
+  /** 是否使用 Responses API（仅 OpenAI 类型有效） */
+  useResponsesApi?: boolean
 }
 
 /**

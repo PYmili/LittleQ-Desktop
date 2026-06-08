@@ -172,14 +172,13 @@ async function handleSend() {
   // 注册流式 chunk 监听器
   const unsub = window.api.onAiChunk((chunk) => {
     if (chunk.type === 'content' && chunk.text) {
-      // 逐步追加 AI 回复文本
       appendAssistantContent(chunk.text)
+    } else if (chunk.type === 'reasoning' && chunk.text) {
+      appendAssistantReasoning(chunk.text)
     } else if (chunk.type === 'error') {
-      // 显示错误信息并标记流式结束
       appendAssistantContent(`\n\n[错误] ${chunk.error}`)
       chatStore.finishStreaming(targetId)
     } else if (chunk.type === 'done') {
-      // 标记流式完成，清理监听器
       chatStore.finishStreaming(targetId)
       unsub()
       isSending.value = false
@@ -226,11 +225,25 @@ function buildMessages(): { role: string; content: string }[] {
 function appendAssistantContent(text: string) {
   const conv = chatStore.activeConversation
   if (!conv) return
-  // 获取最后一条消息并检查是否为 assistant
   const messages = conv.messages as MessageModel[]
   const lastMsg = messages[messages.length - 1]
   if (lastMsg && lastMsg.role === 'assistant') {
     lastMsg.content += text
+  }
+}
+
+/**
+ * 向当前助手消息追加思考内容。
+ *
+ * @param text - 追加的思考文本
+ */
+function appendAssistantReasoning(text: string) {
+  const conv = chatStore.activeConversation
+  if (!conv) return
+  const messages = conv.messages as MessageModel[]
+  const lastMsg = messages[messages.length - 1]
+  if (lastMsg && lastMsg.role === 'assistant') {
+    lastMsg.reasoning = (lastMsg.reasoning || '') + text
   }
 }
 

@@ -6,8 +6,8 @@
  */
 export interface StreamChunk {
   /** chunk 类型 */
-  type: 'content' | 'tool_call' | 'done' | 'error'
-  /** 文本内容（type 为 content 时有效） */
+  type: 'content' | 'tool_call' | 'done' | 'error' | 'reasoning'
+  /** 文本内容（type 为 content 或 reasoning 时有效） */
   text?: string
   /** 工具名称（type 为 tool_call 时有效） */
   toolName?: string

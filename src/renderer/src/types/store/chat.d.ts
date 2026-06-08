@@ -12,11 +12,13 @@
  * @remarks
  * `role` 区分发送者：`user` 表示用户消息（右侧气泡），`assistant` 表示 AI 回复（左侧气泡）。
  * `streaming` 表示 AI 回复是否仍在上屏中，完毕后 `false` 并触发 Markdown 渲染。
+ * `reasoning` 为 AI 思考过程文本（如 DeepSeek-R1 的 CoT），流式输出完成后可展开查看。
  * `timestamp` 为毫秒级 Unix 时间戳。
  *
  * - `id` — 消息唯一标识
  * - `role` — 消息发送者角色
  * - `content` — 消息文本内容
+ * - `reasoning` — AI 思考过程内容（可选）
  * - `streaming` — 是否仍在流式上屏（仅 assistant 消息使用）
  * - `timestamp` — 消息创建时间（毫秒时间戳）
  */
@@ -24,6 +26,7 @@ export interface MessageModel {
   id: string
   role: 'user' | 'assistant'
   content: string
+  reasoning?: string
   streaming?: boolean
   timestamp: number
 }

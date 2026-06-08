@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import * as Settings from '../stores/settings-store'
-import { registerProvider } from '../ai/providers'
+import { registerProvider, unregisterProvider, clearAllProviders } from '../ai/providers'
 import type { ProviderSettings } from '../types'
 
 /**
@@ -46,6 +46,8 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:provider:remove', async (_event, id: string) => {
     // 从持久化存储和选中状态中移除 Provider
     Settings.removeProvider(id)
+    // 同步清理内存中的 Provider 注册表
+    unregisterProvider(id)
   })
 
   ipcMain.handle('settings:provider:select', async (_event, id: string | null) => {
@@ -61,8 +63,10 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:import', async () => {
     // 从磁盘文件导入配置
     const result = await Settings.importSettings()
-    // 将导入的 Provider 逐一注册到内存注册表
     if (result) {
+      // 清空旧的 Provider 注册表，避免残留已删除的 Provider
+      clearAllProviders()
+      // 将导入的 Provider 逐一注册到内存注册表
       for (const p of result) {
         registerProvider(p)
       }

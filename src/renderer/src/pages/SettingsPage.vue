@@ -82,7 +82,7 @@ function goBack() {
         <div v-else-if="activeCategory === 'about'" class="placeholder-panel">
           <el-icon><InfoFilled /></el-icon>
           <p>LittleQ Desktop v1.0.0</p>
-          <span class="about-desc">AI Coding Agent 桌面应用</span>
+          <span class="about-desc">AI Agent 桌面应用</span>
         </div>
       </div>
     </main>
